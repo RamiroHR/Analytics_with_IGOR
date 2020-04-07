@@ -6,3 +6,8 @@ The following Functions are included:
 - [x] Equivalent parallel capa.
 - [x] Frequency of an LC circuit.
 
+For AFM data analysis:
+- [x] Extract all Layers from the 3D matrix
+- [x] Extract a selected Layer from the 3D matrix
+- [x] Extract a selected area from a 2D-plot
+- [x] Measure JJ Area frrom a AFM picture (AreaJJ_v3)
