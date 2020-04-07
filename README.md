@@ -5,3 +5,4 @@ The following Functions are included:
 -[x] Area of an ellipse.\
 -[x] Equivalent parallel capa.\
 -[x] Frequency of an LC circuit.\
+
