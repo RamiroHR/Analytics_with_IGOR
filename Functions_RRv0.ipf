@@ -39,7 +39,7 @@ Function freqLC(indL,capa)
 	freq = 1/(2*pi*sqrt(indL*capa))/1e9
 	
 	print "f =",freq,"GHz"
-	print "Vj =",freq*2.08,"µV"
+	print "Vj =",freq*2.08,"ÂµV"
 	return freq*1e9
 End
 
@@ -126,11 +126,11 @@ function AreaJJ_v3(Map,zmin,dx)
 	A=Npxls*(dx)^2
 	
 	//return A
-	print A/1e-12,"µm^2"
+	print A/1e-12,"Âµm^2"
 	
 	display;appendimage Map
 	appendimage newmap
 	ModifyImage $NameOfWave(newmap) ctab= {*,*,YellowHot,1}
-	Legend/C/N=text0/J NameOfWave(Map)+"\r zmin= "+num2str(zmin)+"\r Area= "+num2str(A/1e-12)+" µm\S2\M" 
+	Legend/C/N=text0/J NameOfWave(Map)+"\r zmin= "+num2str(zmin)+"\r Area= "+num2str(A/1e-12)+" Âµm\S2\M" 
 	
 End
