@@ -1,4 +1,9 @@
-# IGOR_Functions_RR
+# IGOR procedures
+
+## ACL_WindowDesktops
+Allows to create multiple desktops within a single IGOR run for better data and plots organization.
+
+## IGOR_Functions_RR
 This is an IGOR procedure with diverse functions created by RR.\
 The following Functions are included:
 
