@@ -1,18 +1,44 @@
 # IGOR procedures
 
 ## ACL_WindowDesktops
-Allows to create multiple desktops within a single IGOR run for better data and plots organization.
+Allows to create multiple desktops within a single IGOR run for better data and plots organization. Include a Help file.
+
+## Base
+version: v0
+Basic set of functions for data analysis and visualisation.
+
 
 ## IGOR_Functions_RR
-This is an IGOR procedure with diverse functions created by RR.\
-The following Functions are included:
+version: v1
+Includes diverse functions created by me, such as:\
 
-- [x] Area of an ellipse.
-- [x] Equivalent parallel capa.
-- [x] Frequency of an LC circuit.
+Math
+- [x] Compute ellipse area and perimeter.
+- [x] Equivalent series capa.
+- [x] LC circuit resonant frequency.
 
 For AFM data analysis:
-- [x] Extract all Layers from the 3D matrix
-- [x] Extract a selected Layer from the 3D matrix
-- [x] Extract a selected area from a 2D-plot
-- [x] Measure JJ Area frrom a AFM picture (AreaJJ_v3)
+- [x] ExtractLayer: Extract all Layers from the 3D matrix
+- [x] xtract1Layer: Extract a selected Layer from the 3D matrix
+- [x] xtractZoom: Extract a selected area from a 2D-plot
+- [x] AreaJJ_v3: Measure JJ Area frrom a AFM picture (AreaJJ_v3)
+
+
+## JJspectro
+version: v3
+From script started by JG. Continue adding functionalities.
+- [x] Menu JJ spectro
+- [x] SeriesR
+- [x] PlotIVs
+- [x] GetLRC
+- [x] FitPeakLowCoupling
+- [x] FitPeakHighCoupling
+- [x] ToBeSolvedResPeak
+- [x] PeakHighCoupling, ..2, ..3
+- [x] ToBeIntegratedqp
+- [x] Iqp(V,alpha,Delta)
+- [x] qpexcitation(w,V)
+- [x] RemoveHalfPoints(w1,w2)
+
+
+
