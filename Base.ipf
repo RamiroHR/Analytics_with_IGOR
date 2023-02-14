@@ -80,7 +80,7 @@ Function Initialize_Base(reinit)
 		NewDataFolder/O/S Base // Our stuff goes in here.
 		Make/O/N=(256,256) m, dm
 //		Make/O/B/U/N=0 datafoldersel
-		Make/O/T/N=1 datafolderlist
+		Make/O/T/N=1 datafolderlist_
 		Variable/G firstpoint=0, lastpoint, istart,istartBR,nbtoskip, iend, Vstartslow, Vfinalslow, xscale1 = 1, yscale1 = 1, yscale = 1, zscale = 1,npnts, xstep, xstart, iref, ifile
 		Variable/G Vcenter, Vperiod, Delta, harmonic, nptsslow, channel_no, DeltaEjj
 		Variable/G addtograph, correctr, Xcol=1, Ycol=2, skipLines=0
@@ -92,7 +92,7 @@ Function Initialize_Base(reinit)
 	
 	NewDataFolder/O root:Data
 	SetDataFolder root:Packages:GQ:Base
-	Make/O/T/N=1 datafolderlist
+	Make/O/T/N=1 datafolderlist_
 	
 	SetDataFolder savDF // Restore current DF.
 End
@@ -2413,7 +2413,7 @@ Function EliminateOutliers(wx,wy,[dx,dy])
 End
 
 
-Function XYZ3Matrix(wx,wy,wz,mname,[xmin,xmax,nx,ymin,ymax,ny,neighbors,nanfactor]) //,thresh])	
+Function XYZ3Matrix(wx,wy,wz,mname,[xmin,xmax,nx,ymin,ymax,ny,neighbors,nanfactor,usemax,z0]) //,thresh])	
 	// XYZ3Matrix takes three matrices wx wy and wz and creates a third matrix mname (size nx x ny) whose
 	// rows are taken from values of wx
 	// columns are taken from values of wy
@@ -2432,11 +2432,14 @@ Function XYZ3Matrix(wx,wy,wz,mname,[xmin,xmax,nx,ymin,ymax,ny,neighbors,nanfacto
 	// (thresh: if there are less than thresh points in a matrix element, this element is ignored (NaN)
 	//				this is useful to eliminate isolated points, such as when switching.  
 	//				NOTE: this functionality was replaced with EliminateOutliers function.)
+	// usemax: change the behaviour of the function by keeping the max(abs()) value within a grid element, instead of
+	//         taking the average. This adds noise but also gives a more useful representation of the supercurrent
+	//	z0:	 added 20190426 JLS : if present and not NaN, in conjunction with usemax, plot max(z)*sign(z-z0) to keep global IV trend whilst extracting switching current
 	
 	WAVE wx, wy, wz
 	String mname
 	Variable xmin, xmax, nx, ymin, ymax, ny
-	Variable neighbors, nanfactor  //, thresh
+	Variable neighbors, nanfactor, usemax, z0  //, thresh
 	
 	if(ParamIsDefault(xmin) || ParamIsDefault(xmax))
 		xmin = wavemin(wx)
@@ -2467,6 +2470,15 @@ Function XYZ3Matrix(wx,wy,wz,mname,[xmin,xmax,nx,ymin,ymax,ny,neighbors,nanfacto
 		Print "ny =", ny
 	endif
 
+	if(ParamIsDefault(usemax))
+		usemax = 0
+	endif
+
+	if(ParamIsDefault(z0))
+		z0 = NaN
+	endif
+
+
 	Make/O/N=(nx,ny)/FREE mhits = 0, m = 0
 	
 	SetScale d,0,0,WaveUnits(wz,-1), m, mhits
@@ -2484,16 +2496,27 @@ Function XYZ3Matrix(wx,wy,wz,mname,[xmin,xmax,nx,ymin,ymax,ny,neighbors,nanfacto
 		r =  (wx[i]-xmin)/(xmax-xmin)*(nx-1)
 		c = (wy[i]-ymin)/(ymax-ymin)*(ny-1)
 	
-		if(r >= 0 && r < nx && c >= 0 && c < ny)
-			mhits[r][c] += 1
-			m[r][c] += wz[i]
+		if(usemax)
+			if(r >= 0 && r < nx && c >= 0 && c < ny && abs(wz[i]) > abs(m[r][c])) // abs(m) added for z0 option
+				mhits[r][c] = 1
+				if(numtype(z0)==2)
+					m[r][c] = abs(wz[i])
+				else
+					m[r][c] = abs(wz[i])*sign(wz[i]-z0)
+				endif
+			endif
+		else
+			if(r >= 0 && r < nx && c >= 0 && c < ny)
+				mhits[r][c] += 1
+				m[r][c] += wz[i]
+			endif
 		endif
 	EndFor
 	
-m = (mhits[p][q] > 2) ? m[p][q]/mhits[p][q] : NaN
+//	m = (mhits[p][q] > thresh) ? m[p][q]/mhits[p][q] : NaN
 //#endif
 
-//	m /= mhits
+	m /= mhits
 	
 //	if(ParamIsDefault(nanoption))
 //		nanoption = 1
@@ -2532,6 +2555,7 @@ m = (mhits[p][q] > 2) ? m[p][q]/mhits[p][q] : NaN
 	
 	Duplicate/O m, $mname	
 End
+
 
 Function MakeImage(matrix,xmin,xmax)
 	WAVE matrix
@@ -3407,7 +3431,7 @@ EndMacro
 //	DrawText 150,33,"Data Preview"
 //	DrawText 20,34,"root:Data:"
 //	ListBox DataList,pos={16,41},size={113,218},proc=ListBoxProc
-//	ListBox DataList,listWave=root:Packages:GQ:Base:datafolderlist,mode= 1,selRow= 0
+//	ListBox DataList,listWave=root:Packages:GQ:Base:datafolderlist_,mode= 1,selRow= 0
 //	Button DataLoaderB,pos={15,270},size={116,30},proc=DataLoaderGraphData,title="Graph Data"
 //	Display/W=(150,41,458,299)/HOST=#
 //	RenameWindow #,G0
@@ -3423,7 +3447,7 @@ Window DataLoadPanel() : Panel
 	DrawText 150,33,"Data Preview"
 	DrawText 20,34,"root:Data:"
 	ListBox DataList,pos={16,41},size={113,218},proc=ListBoxProc
-	ListBox DataList,listWave=root:Packages:GQ:Base:datafolderlist,mode= 1,selRow= 0
+	ListBox DataList,listWave=root:Packages:GQ:Base:datafolderlist_,mode= 1,selRow= 0
 	Button DataLoaderB,pos={15,270},size={116,30},proc=DataLoaderGraphData,title="Graph Data"
 	CheckBox CopyCheck,pos={28,309},size={94,14},title="Copy to \"root:\"?",value= 0
 	Display/W=(150,41,458,326)/HOST=# 
