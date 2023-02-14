@@ -4,12 +4,12 @@
 Allows to create multiple desktops within a single IGOR run for better data and plots organization. Include a Help file.
 
 ## Base
-version: v0
+version: _RRv1
 Basic set of functions for data analysis and visualisation.
-
+Updated XYZ3Matrix function to remove I_offset.
 
 ## IGOR_Functions_RR
-version: v1
+version: v2
 Includes diverse functions created by me, such as:\
 
 Math
@@ -21,7 +21,8 @@ For AFM data analysis:
 - [x] ExtractLayer: Extract all Layers from the 3D matrix
 - [x] xtract1Layer: Extract a selected Layer from the 3D matrix
 - [x] xtractZoom: Extract a selected area from a 2D-plot
-- [x] AreaJJ_v3: Measure JJ Area frrom a AFM picture (AreaJJ_v3)
+- [x] AreaJJ_v3: Measure JJ Area from a AFM picture.
+- [x] AreaJJ_v4: Measure JJ Area (AFM pic) within designed zone (interactive)
 
 
 ## JJspectro
@@ -41,4 +42,7 @@ From script started by JG. Continue adding functionalities.
 - [x] RemoveHalfPoints(w1,w2)
 
 
+## Procedure_noise_analysis
+version: v0
+Functions for computing spectral noise density and related signals.
 
