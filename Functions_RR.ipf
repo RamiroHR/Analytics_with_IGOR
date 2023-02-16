@@ -333,14 +333,14 @@ Function AddRetrapingToMap(w_up,w_down,extraN,wNewName)
 	for(i=0;i<dimsize(w_up,0);i+=1)
 		for(j=0;j<dimsize(w_up,1);j+=1)
 			if(numtype(w_up[i][j]) == 2)
+				
 				wUD[i][j] = w_down[i][j]
 				
-				if(numtype(w_up[i][j]) == 2)
-					for(n=0;n<extraN;n+=1)
-						wUD[i][j+N] = w_down[i][j+N]
-					endfor
-				endif
-				
+				for(n=1;n<extraN;n+=1)  // to replace just a section
+				//for(n=0;n<(dimsize(w_up,1)-j);n+=1) //to replace up to the end
+					//wUD[i][j+n] = 0.5*(w_down[i][j+n]+w_up[i][j+n])
+					wUD[i][j+n] = w_down[i][j+n]
+				endfor				
 				//print "col=",i,"row=",j
 			
 			endif
@@ -348,6 +348,42 @@ Function AddRetrapingToMap(w_up,w_down,extraN,wNewName)
 	endfor
 	
 	return 0
+End
+
+Function AddRetrapingToMap_Max(w_up,w_down,v0,dV,Nh)
+// find the position (i,jm) where there is a max current in the wave w_up
+// within the range (v0-dv;v0+dv) for each IV.
+// replace the w_up[i][j] values by the w_down[i][j] for j>jm+jh
+// where jh is the point of the voltage dVh beyond the mawimum of the peak (5 µV range for example)
+// all copie to the newwave. preserves the original waves.
+ 
+	wave w_up,w_down
+	variable v0,dv,Nh//,dVh
+	
+	string wNewname=Nameofwave(w_up)+"_UD"
+	duplicate/O w_up $wNewName 
+	Wave wUD = $wNewName
+	
+	variable Nx=dimsize(w_up,0)
+	variable Ny=dimsize(w_up,1)
+	Make/Free/O/N=(Ny) auxI	
+	Make/Free/O/N=(Ny) auxV		
+	auxV = dimoffset(w_up,1)+p*dimdelta(w_up,1)
+	
+	variable i,j,P1,P2,jm
+	for(i=0;i<Nx;i+=1)
+		
+		auxI = w_up[i][p]*(abs(auxV[p]-V0)<dv)
+		wavestats/Q auxI
+		
+		//findlevel/Q/P auxV, auxV[V_maxRowLoc]+dVh
+		
+		for(j=V_maxRowLoc+1;j<Ny;j+=1)
+//			wUD[i][j] = w_down[i][j]
+			wUD[i][j+Nh] = w_down[i][j+Nh] //if we want start to replace 5 point before the numerical max
+												  //This in case there are many points near the max of the peak.
+		endfor
+	endfor
 End
 
 
@@ -409,3 +445,74 @@ Function GetV_when_Iths(wV,wI,wout,Itsh)
 	EndFor
 End
 
+Function HideRetraping(w_up,wNewName,dVhide,V0,dv,dN)
+// dVhide,V0,dv all three negative for retraping.
+// find position of max current in w_up in range V0+/-dv for its volatge dimmension
+// replace all values by nan in the points on the retraping region.
+
+	wave w_up
+	string wNewName
+	variable dVhide,v0,dv,dN
+	
+	duplicate/O w_up $wNewName 
+	Wave wHide = $wNewName
+
+	variable Nx=dimsize(w_up,0)
+	variable Ny=dimsize(w_up,1)
+	Make/Free/O/N=(Ny) auxI	
+	Make/Free/O/N=(Ny) auxV		
+	auxV = dimoffset(w_up,1)+p*dimdelta(w_up,1)
+	
+	variable i,j,P1,val
+	for(i=0;i<Nx;i+=1)
+		
+		auxI = w_up[i][p]*(abs(auxV[p]-V0)<abs(dv))
+		wavestats/Q auxI
+		val=auxV[V_maxRowLoc]+dVhide
+		Findlevel/Q/P auxV,val
+		P1=V_LevelX
+		
+		for(j=P1;j<V_maxRowLoc-dN;j+=1) //plots
+			wHide[i][j]=NaN
+		endfor
+	
+	endfor
+	
+	return 0
+End
+
+Function HideSwitching(wI,wV,wNewName,V0,dv,dN)
+// dVhide,V0,dv all three negative for retraping.
+// find position of max current in w_up in range V0+/-dv for its volatge dimmension
+// replace all values by nan in the points on the retraping region.
+
+	wave wI,wV
+	string wNewName
+	variable v0,dv,dN
+	
+	duplicate/O wI $wNewName 
+	Wave wHide = $wNewName
+
+	variable Nx=dimsize(wI,0)
+	variable Ny=dimsize(wI,1)
+	Make/Free/O/N=(Ny) auxI	
+	Make/Free/O/N=(Ny) auxV		
+	//auxV = dimoffset(w_up,1)+p*dimdelta(w_up,1)
+	
+	variable i,j,P1,val
+	for(i=0;i<Nx;i+=1)
+		auxV = wV[i][p]
+		auxI = wI[i][p]*(abs(auxV[p]-V0)<abs(dv))
+		wavestats/Q auxI
+		//val=auxV[V_maxRowLoc]+dVhide
+		//Findlevel/Q/P auxV,val
+		//P1=V_LevelX
+		
+		for(j=V_maxRowLoc;j<V_maxRowLoc+dN;j+=1) //plots
+			wHide[i][j]=NaN
+		endfor
+	
+	endfor
+	
+	return 0
+End
