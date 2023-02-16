@@ -9,7 +9,7 @@ Basic set of functions for data analysis and visualisation.
 Updated XYZ3Matrix function to remove I_offset.
 
 ## IGOR_Functions_RR
-version: v2
+version: v3
 Includes diverse functions created by me, such as:\
 
 Math
@@ -23,7 +23,14 @@ For AFM data analysis:
 - [x] xtractZoom: Extract a selected area from a 2D-plot
 - [x] AreaJJ_v3: Measure JJ Area from a AFM picture.
 - [x] AreaJJ_v4: Measure JJ Area (AFM pic) within designed zone (interactive)
-
+- [x] MeanValues
+- [x] PlotLinesProfiles
+- [x] AddRetrapingToMap
+- [x] AddRetrapingToMap_Max
+- [x] AlignPeak
+- [x] GetV_when_Iths
+- [x] HideRetraping
+- [x] HideSwitching
 
 ## JJspectro
 version: v3
@@ -45,4 +52,9 @@ From script started by JG. Continue adding functionalities.
 ## Procedure_noise_analysis
 version: v0
 Functions for computing spectral noise density and related signals.
+
+
+## ykDL750
+version: 1.19
+Procedure for controlling sources and measurement equipments
 
