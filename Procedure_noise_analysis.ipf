@@ -2,12 +2,28 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 // PSD calculate Power Spectral Density
-Function PSD(w, segment_size)
+Function PSD(w, segment_size, [withdc])
+	// Help:
+	//
+	// Our PSD calculation function
+	// supply a nodc parameter = 1 to subtract out the DC term
+	// From DSPPeriodogram Help:
+	//	/NODC=val	Suppresses the DC term:
+	//		val=1:	Removes the DC by subtracting the average value of the signal before processing and before applying any window function (see /Win below).
+	//		val=2:	Suppresses the DC term by setting it equal to the second term in the FFT array. 
+	//		val=0:	Computes the DC term by the FFT (default).
+	//
 	WAVE w // real wave to calculate PSD
 	Variable segment_size // size for each segment when calculating the FFT
 						// preferably a power of 2
+	Variable withdc
 	
-	DSPPeriodogram /NOR=((segment_size)^2/2) /SEGN={(segment_size),(segment_size/2)}  w
+	if(ParamIsDefault(withdc))
+		// We use NODC = 1 by default to remove DC offset
+		DSPPeriodogram /NOR=((segment_size)^2/2) /NODC=1 /SEGN={(segment_size),(segment_size/2)}  w
+	else
+		DSPPeriodogram /NOR=((segment_size)^2/2) /SEGN={(segment_size),(segment_size/2)}  w
+	endif
 	
 	WAVE w_psd = W_Periodogram
 
@@ -236,3 +252,5 @@ function plot_psdmap()
 	ModifyGraph log(bottom)=1
 	SetAxis bottom 10,*
 end
+
+
