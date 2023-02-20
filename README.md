@@ -50,11 +50,11 @@ From script started by JG. Continue adding functionalities.
 
 
 ## Procedure_noise_analysis
-version: v0
+version: v2
 Functions for computing spectral noise density and related signals.
 
 
 ## ykDL750
-version: 1.19
+version: _1.19v2
 Procedure for controlling sources and measurement equipments
 
