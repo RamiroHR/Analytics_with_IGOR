@@ -1,5 +1,5 @@
 #pragma rtGlobals=1		// Use modern global access method.
-#pragma version=1.19
+#pragma version=1.19	// it was the former 1.19 version implemented in 20191206 - EB11-p4
 
 // CHANGES:
 // 1.18 Fixed saving Wave Note when Loading Data (no such function for sweeps)
