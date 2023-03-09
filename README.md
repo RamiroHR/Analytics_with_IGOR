@@ -9,7 +9,7 @@ Basic set of functions for data analysis and visualisation.
 Updated XYZ3Matrix function to remove I_offset.
 
 ## IGOR_Functions_RR
-version: v3
+version: v4
 Includes diverse functions created by me, such as:\
 
 Math
@@ -31,9 +31,10 @@ For AFM data analysis:
 - [x] GetV_when_Iths
 - [x] HideRetraping
 - [x] HideSwitching
+- [x] AlignAtMaxV (wV,Voffset)
 
-## JJspectro
-version: v3
+## JJSpectro
+version: v4
 From script started by JG. Continue adding functionalities.
 - [x] Menu JJ spectro
 - [x] SeriesR
