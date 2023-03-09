@@ -516,3 +516,30 @@ Function HideSwitching(wI,wV,wNewName,V0,dv,dN)
 	
 	return 0
 End
+
+Function AlignAtMaxV(wV,Voffset)
+// find the max Voltage. it should be at the bottom of the gap, before the oscillations
+// Align all IV at this point to be set at the value Voffset
+// for the Gap, Voffset=396 µV for example, but it depends on sample.
+  
+	wave wV
+	variable Voffset
+	
+	variable Nx= dimsize(wV,0)
+	variable Ny= dimsize(wV,1)
+	
+	string A_wV = NameofWave(wV)+"_A"
+	Duplicate/O wV $A_wV
+	Wave AwV = $A_wV
+	
+	Make/O/N=(Ny) auxV
+	
+	variable i,j
+	for(i=0;i<Nx;i+=1)
+	
+		auxV = wV[i][p]	
+		wavestats/Q auxV
+		
+		awV[i][] += -wV[i][V_maxRowLoc] + Voffset	
+	endfor
+End
