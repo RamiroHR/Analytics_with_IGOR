@@ -543,3 +543,90 @@ Function AlignAtMaxV(wV,Voffset)
 		awV[i][] += -wV[i][V_maxRowLoc] + Voffset	
 	endfor
 End
+
+
+
+Function CutRangeVJ_v0(waveI,waveV,Vi,Vf)
+//2020.03.15.RR: This function create a new set of waves
+//copied from waveI and waveV only in the voltage range [Vi,Vf] 
+
+	wave waveI,waveV
+	variable Vi,Vf
+	
+	variable Ni,Nf
+	Findlevel/Q/P/R=[0,10010] waveV,Vi
+	Ni=V_levelX
+	Findlevel/Q/P/R=[0,10010] waveV,Vf
+	Nf=V_levelX
+		
+	string Xwi = NameofWave(waveI)+"_X"
+	Duplicate/O/R=[Ni,Nf] waveI $Xwi
+	string Xwv = NameofWave(waveV)+"_X"
+	Duplicate/O/R=[Ni,Nf] waveV $Xwv
+
+End
+
+
+
+
+Function CutRangeVJ_v1(waveI,waveV,Vi,Vf,RetSlope) //,outI,outV
+//2020.03.18.RR: This function creates a new set of wave for an I-V curve
+//copied from waveI and waveV only in the voltage range [Vi,Vf]
+//It combines switching (from positive Vj) with the retrapping (at negative Vj)
+//Uses the value of the solope of the load line (RetSlope) in rettraping to skip the hidden region. 
+//Select the case with minus sign if retraping is at negative voltages.
+	wave waveI,waveV
+	variable Vi,Vf,RetSlope
+
+//find the point number of voltages values Vi, Vf.	
+	variable Np,Ni_up,Nf_up
+	Np=Dimsize(waveI,0)
+	Findlevel/Q/P/R=[0,Np] waveV,Vi
+	Ni_up=V_levelX
+	Findlevel/Q/P/R=[0,Np] waveV,Vf
+	Nf_up=V_levelX
+	Wavestats/Q/R=[Ni_up,Nf_up] waveI
+	Nf_up=V_maxRowLoc
+
+//copie the waves, invert the I-V to work in rettraping as it was a switching event.
+	Duplicate/FREE waveI, wI_ret
+	Duplicate/FREE waveV, wV_ret
+
+///-------- TO SELECT THE CASE -----------------
+	//to invert the sense of the sweept if retraping if Up  & Down are both at positive voltages
+		//wI_ret = waveI[20019-p]	
+		//wV_ret = waveV[20019-p]	
+	//to invert the sense of the sweept is retraping if Up  & Down are at oposite sides of the IV.
+	wI_ret = -waveI[Np-1-p]	
+	wV_ret = -waveV[Np-1-p]	
+	//search for the max I_value
+	variable Ni_ret,Nf_ret
+	Findlevel/Q/P/R=[0,Np] wV_ret,Vi
+	Ni_ret=V_levelX
+	Findlevel/Q/P/R=[0,Np] wV_ret,Vf
+	Nf_ret=V_levelX
+	Wavestats/Q/R=[Ni_ret,Nf_ret] wI_ret
+	
+	//over-estimated the Landing voltage after small-switching
+	Variable Imax,Vmax,Vlanding
+	Imax = V_max
+	Vmax = wV_ret[V_maxRowLoc]
+	Vlanding = Vmax + (-Imax)/RetSlope
+	
+	//findlevel the point of Landing_Vj (this is Ni_ret)
+	Findlevel/Q/P/R=[0,Np] wV_ret,Vlanding
+	Ni_ret=V_levelX
+	
+// duplicate waveI,waveV in range Ni_up, Nf_up
+	Duplicate/FREE/R=[Ni_up,Nf_up] waveI wI_upX
+	Duplicate/FREE/R=[Ni_up,Nf_up] waveV wV_upX
+// duplicate wI_ret,wV_ret in range Ni_ret, Nf_ret
+	Duplicate/FREE/R=[Ni_ret,Nf_ret] wI_ret wI_retX
+	Duplicate/FREE/R=[Ni_ret,Nf_ret] wV_ret wV_retX	
+// concatenate both parts.
+	string UDwI = NameofWave(waveI)+"_UD"
+	Concatenate/O {wI_upX,wI_retX}, $UDwI 
+	string UDwV = NameofWave(waveV)+"_UD"
+	Concatenate/O {wV_upX,wV_retX}, $UDwV
+	
+End
