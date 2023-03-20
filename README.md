@@ -9,7 +9,7 @@ Basic set of functions for data analysis and visualisation.
 Updated XYZ3Matrix function to remove I_offset.
 
 ## IGOR_Functions_RR
-version: v4
+version: v5
 Includes diverse functions created by me, such as:\
 
 Math
@@ -32,6 +32,8 @@ For AFM data analysis:
 - [x] HideRetraping
 - [x] HideSwitching
 - [x] AlignAtMaxV (wV,Voffset)
+- [x] CutRangeVJ_v0
+- [x] CutRangeVJ_v1
 
 ## JJSpectro
 version: v4
@@ -51,9 +53,9 @@ From script started by JG. Continue adding functionalities.
 
 
 ## Procedure_noise_analysis
-version: v2
+version: v3
 Functions for computing spectral noise density and related signals.
-
+- [x] Function PlotPSDs: compute PSD of many waves.
 
 ## ykDL750
 version: _1.19v2
