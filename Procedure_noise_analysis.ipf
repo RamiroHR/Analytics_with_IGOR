@@ -254,3 +254,62 @@ function plot_psdmap()
 end
 
 
+///------------------------------------------------------------------------------------------
+///----------Ramiro's function--------------------------------------------------------------
+///-----------------------------------------------------------------------------------
+
+
+Function PlotPSDs(segment_size,dName1,wavesNum) : Graph
+// It computes and plots the PSD of many waves.
+// The waves {C0001,C0002,C0003} are given for example as: 
+// 	dName1='C00', wavesNum={'01','02','03'}
+// The PSD is computed using Nsegments=2^19
+
+	Variable segment_size
+	String dName1
+	wave/T wavesNum
+
+	Variable numWaves = numpnts(wavesNum)
+	Variable i
+	for(i=0; i<numWaves; i+=1)	
+		PauseUpdate; Silent 1		// building window...
+		String fldrSav0= GetDataFolder(1)
+		String dfName
+		String dName
+		sprintf dName, dName1 + "%s",wavesNum[i]
+		sprintf dfName,"root:Data:%s:",dName
+		SetDataFolder dfName
+		
+		//Print wavesNum[i]
+		//Print dName
+	
+		WAVE ifemto = $dName+"_ij"
+		PSD(ifemto,segment_size)
+		WAVE psd = $dName+"_ij_psd"
+	
+		if (i == 0)		
+			Display /W=(151.8,136.4,942.6,465.2) psd
+		else
+			appendtograph psd
+		endif		
+	endfor
+	
+	ModifyGraph grid=1
+	ModifyGraph log=1
+	ModifyGraph lblMargin(left)=2,lblMargin(bottom)=3
+	ModifyGraph axOffset(left)=-0.888889,axOffset(bottom)=0.222222
+	ModifyGraph gridRGB=(34952,34952,34952)
+	ModifyGraph tickUnit(left)=1
+	Label left "Current spectral density S\\Bi\\M (\\U)"
+	Label bottom "Frequency"
+	SetAxis left 1e-35,1e-22
+	SetDrawLayer UserFront
+	SetDrawEnv xcoord= bottom,ycoord= prel,linethick= 2,dash= 8
+	DrawLine 100,0,100,1
+	Legend/C/N=text0/A=MC/X=43.00/Y=45.00
+	
+	SetDataFolder fldrSav0
+EndMacro
+
+
+
