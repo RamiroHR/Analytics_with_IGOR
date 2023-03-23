@@ -10,7 +10,17 @@
 // xtractZoom(wave2D)
 // AreaJJ_v3(Map,zmin)
 // AreaJJ_v4(Map,zmin)
-// 
+// MeanValues(dName1,wavesNum)
+// PlotLinesProfiles(wave_ij,wave_vj,n1,n2,dn,icoil)
+// AddRetrapingToMap(w_up,w_down,extraN,wNewName)
+// AddRetrapingToMap_Max(w_up,w_down,v0,dV,Nh)
+// AlignPeak(wV,wI,Vmin,Vmax,Voffset)
+// GetV_when_Iths(wV,wI,wout,Itsh)
+// HideRetraping(w_up,wNewName,dVhide,V0,dv,dN)
+// HideSwitching(wI,wV,wNewName,V0,dv,dN)
+// AlignAtMaxV(wV,Voffset)
+// CutRangeVJ_v0(waveI,waveV,Vi,Vf)
+// CutRangeVJ_v1(waveI,waveV,Vi,Vf,RetSlope)
 
 
 
@@ -350,6 +360,7 @@ Function AddRetrapingToMap(w_up,w_down,extraN,wNewName)
 	return 0
 End
 
+
 Function AddRetrapingToMap_Max(w_up,w_down,v0,dV,Nh)
 // find the position (i,jm) where there is a max current in the wave w_up
 // within the range (v0-dv;v0+dv) for each IV.
@@ -420,7 +431,6 @@ Function AlignPeak(wV,wI,Vmin,Vmax,Voffset)
 	endfor
 End
 
-
 Function GetV_when_Iths(wV,wI,wout,Itsh)
 //Similar to GetVamx
 //Returns a 1D wave with voltages at which the current is equal to Itsh (wV and wI are 2D waves)
@@ -444,6 +454,7 @@ Function GetV_when_Iths(wV,wI,wout,Itsh)
 		wout[i]=Vj[round(V_LevelX)]		
 	EndFor
 End
+
 
 Function HideRetraping(w_up,wNewName,dVhide,V0,dv,dN)
 // dVhide,V0,dv all three negative for retraping.
@@ -481,15 +492,16 @@ Function HideRetraping(w_up,wNewName,dVhide,V0,dv,dN)
 	return 0
 End
 
+
 Function HideSwitching(wI,wV,wNewName,V0,dv,dN)
 // dVhide,V0,dv all three negative for retraping.
 // find position of max current in w_up in range V0+/-dv for its volatge dimmension
-// replace all values by nan in the points on the retraping region.
+// replace all values by nan in the points on the switching region.
 
 	wave wI,wV
 	string wNewName
 	variable v0,dv,dN
-	
+
 	duplicate/O wI $wNewName 
 	Wave wHide = $wNewName
 
@@ -498,24 +510,25 @@ Function HideSwitching(wI,wV,wNewName,V0,dv,dN)
 	Make/Free/O/N=(Ny) auxI	
 	Make/Free/O/N=(Ny) auxV		
 	//auxV = dimoffset(w_up,1)+p*dimdelta(w_up,1)
-	
+
 	variable i,j,P1,val
 	for(i=0;i<Nx;i+=1)
 		auxV = wV[i][p]
 		auxI = wI[i][p]*(abs(auxV[p]-V0)<abs(dv))
-		wavestats/Q auxI
+		wavestats/Q/P auxI
 		//val=auxV[V_maxRowLoc]+dVhide
 		//Findlevel/Q/P auxV,val
 		//P1=V_LevelX
-		
-		for(j=V_maxRowLoc;j<V_maxRowLoc+dN;j+=1) //plots
+
+		for(j=V_maxRowLoc;j<V_maxRowLoc+dN;j+=1)
 			wHide[i][j]=NaN
 		endfor
-	
+
 	endfor
-	
+
 	return 0
 End
+
 
 Function AlignAtMaxV(wV,Voffset)
 // find the max Voltage. it should be at the bottom of the gap, before the oscillations
@@ -545,7 +558,6 @@ Function AlignAtMaxV(wV,Voffset)
 End
 
 
-
 Function CutRangeVJ_v0(waveI,waveV,Vi,Vf)
 //2020.03.15.RR: This function create a new set of waves
 //copied from waveI and waveV only in the voltage range [Vi,Vf] 
@@ -567,13 +579,11 @@ Function CutRangeVJ_v0(waveI,waveV,Vi,Vf)
 End
 
 
-
-
 Function CutRangeVJ_v1(waveI,waveV,Vi,Vf,RetSlope) //,outI,outV
 //2020.03.18.RR: This function creates a new set of wave for an I-V curve
 //copied from waveI and waveV only in the voltage range [Vi,Vf]
 //It combines switching (from positive Vj) with the retrapping (at negative Vj)
-//Uses the value of the solope of the load line (RetSlope) in rettraping to skip the hidden region. 
+//Uses the value of the slope of the load line (RetSlope) in rettraping to skip the hidden region. 
 //Select the case with minus sign if retraping is at negative voltages.
 	wave waveI,waveV
 	variable Vi,Vf,RetSlope
