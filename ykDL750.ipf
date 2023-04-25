@@ -1,5 +1,5 @@
 #pragma rtGlobals=1		// Use modern global access method.
-#pragma version=1.19	// it was the former 1.19 version implemented in 20191206 - EB11-p4
+#pragma version=1.19
 
 // CHANGES:
 // 1.18 Fixed saving Wave Note when Loading Data (no such function for sweeps)
@@ -52,7 +52,7 @@ End
 StrConstant kGPIBn = "GPIB0"
 
 // Yokogawa DL750 with DSP
-StrConstant kAddress = "GPIB0::06::INSTR"  
+StrConstant kAddress = "GPIB0::11::INSTR"  
 Constant kNumDSP = 6
 
 // Yokogawa DL750 without DSP
@@ -632,7 +632,7 @@ Function/S ykQuery(resourceName, query)
 		Abort
 	endif
 	
-	progstr = "COMM:HEADER OFF"
+	progstr = "COMMUNICATE:HEADER OFF"
 	VISAWrite instr, progstr
 	status = V_status
 	AbortOnValue V_flag==0,1
@@ -640,7 +640,7 @@ Function/S ykQuery(resourceName, query)
 	response = VISABinQuery(instr,query)
 	AbortOnValue strlen(response) == 0,2
 	
-	progstr = "COMM:HEADER ON"
+	progstr = "COMMUNICATE:HEADER ON"
 	VISAWrite instr, progstr
 	status = V_status
 	AbortOnValue V_flag==0,2
@@ -747,7 +747,7 @@ Function ykGetTrace(resourceName, traceNum, wName, [record])
 		status = V_status
 		AbortOnValue V_flag==0,0
 	
-		progstr = "COMM:HEADER OFF"
+		progstr = "COMMUNICATE:HEADER OFF"
 		VISAWrite instr, progstr
 		status = V_status
 		AbortOnValue V_flag==0,1
@@ -760,7 +760,7 @@ Function ykGetTrace(resourceName, traceNum, wName, [record])
 		if(traceNum < kNumAcq)
 			progstr = "WAVEFORM:TRACE " + num2str(traceNum)
 		elseif(traceNum < kNumAcq + kNumDSP)
-//			progstr = "WAVEFORM:TRACE DSP" + num2str(traceNum-kNumAcq)
+			progstr = "WAVEFORM:TRACE DSP" + num2str(traceNum-kNumAcq)
 		else
 			progstr = "WAVEFORM:TRACE MATH" + num2str(traceNum-kNumAcq-kNumDSP)
 		endif
@@ -883,7 +883,7 @@ Function ykGetTrace(resourceName, traceNum, wName, [record])
 		SetScale/P x,-trigpos*dt,dt,"s",w
 		SetScale d,0,0,"V",w
 
-		progstr = "COMM:HEADER ON"
+		progstr = "COMMUNICATE:HEADER ON"
 		VISAWrite instr, progstr
 		status = V_status
 		AbortOnValue V_flag==0,20
@@ -995,7 +995,7 @@ Function ykAvailableTraces(resourceName, w)
 	Redimension/N=(kNumChan) w
 	
 	try
-		progstr = "COMM:HEADER OFF"
+		progstr = "COMMUNICATE:HEADER OFF"
 		VISAWrite instr, progstr
 		status = V_status
 		AbortOnValue V_flag==0,1
@@ -1022,9 +1022,7 @@ Function ykAvailableTraces(resourceName, w)
 			endif
 		endfor			
 		
-		// NOT GOOD IF THERE IS NO DSP!
-		
-		for(i=10000;i<=kNumDSP;i+=1)		// Check DSP channels
+		for(i=1;i<=kNumDSP;i+=1)		// Check DSP channels
 			sprintf progstr, "DSP%d:DISPLAY?", i
 			//Print progstr
 			channelOn = str2num(VISABinQuery(instr,progstr))
@@ -1048,7 +1046,7 @@ Function ykAvailableTraces(resourceName, w)
 			endif
 		endfor			
 
-		progstr = "COMM:HEADER ON"
+		progstr = "COMMUNICATE:HEADER ON"
 		VISAWrite instr, progstr
 		status = V_status
 		AbortOnValue V_flag==0,98
