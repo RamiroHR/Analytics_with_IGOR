@@ -21,6 +21,7 @@ Menu "JJ Spectro"
 	"Get a nice map", NiceMap()
 	"Add a frequency axis on the axis opposite to the voltage", AddFreqAxis()
 	"Add a top axis with flux (for maps)", TopAxisFlux()
+	"Add a frequency axis on the axis opposite to the current",AddFreqAxisCurrent()
 End
 
 
@@ -1060,6 +1061,17 @@ Function VoltToHz(info)
 	return 0
 End
 
+Function AmpereToHz(info)
+	STRUCT WMAxisHookStruct &info
+	GetAxis/Q/W=$info.win $info.mastName	// get master (bottom) axis' range in V_min, V_Max
+	Variable minF =  V_min/(2*1.6e-19)
+	Variable maxF =  V_max/(2*1.6e-19)
+	info.min = minF	// new min for free axis
+	info.max= maxF	// new max for free axis
+	info.units = "Hz"
+	return 0
+End
+
 Function NiceMap()
 	ModifyGraph width=226.772*2,height=226.772*2
 	ModifyGraph margin(right)=150
@@ -1122,6 +1134,15 @@ Function AddFreqAxis()
 		ModifyFreeAxis topax, master=bottom, hook=VoltToHz
 		ModifyGraph tick(topax)=0,lblPos(topax)=50,freePos(topax)={0,kwFraction}	
 	Endif
+End
+
+Function AddFreqAxisCurrent()
+	ModifyGraph mirror(left)=0
+	ModifyGraph mirror(bottom)=2,axisOnTop=0	
+	NewFreeAxis/R rightax
+	Label rightax "Frequency (\\U)"
+	ModifyFreeAxis rightax, master=left, hook=AmpereToHz
+	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
 End
 
 
