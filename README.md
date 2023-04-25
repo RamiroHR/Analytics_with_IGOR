@@ -9,8 +9,8 @@ Basic set of functions for data analysis and visualisation.
 Updated XYZ3Matrix function to remove I_offset.
 
 ## Functions_RR
-version: v6
-Includes diverse functions created by me, such as:\
+version: v7
+Includes diverse functions created by me, such as:  
 
 Math
 - Compute ellipse area and perimeter.
@@ -34,10 +34,13 @@ For AFM data analysis:
 - AlignAtMaxV (wV,Voffset)
 - CutRangeVJ_v0
 - CutRangeVJ_v1
+- PlotTracesFromRange #plot IV map traces selected by an index range [Ni,Nf] 
+- AppendTracesFromRange  # similar to previous but append to an existing plot
+
 
 ## JJSpectro
-version: v9
-From script started by JG (<v9). I continue adding functionalities (>v9).
+version: v10_JG
+From script started by JG (<v10). I continue adding functionalities (>v10).
 - Menu JJ spectro
 - InitializeConstants
 - FitRN
@@ -89,6 +92,8 @@ From script started by JG (<v9). I continue adding functionalities (>v9).
 - GetRvsT
 - GetRvsTemp
 - GetRvsTemp1
+- AmpereToHz
+- AddFreqAxisCurrent
 
 
 ## Procedure_noise_analysis
@@ -97,6 +102,6 @@ Functions for computing spectral noise density and related signals.
 - Function PlotPSDs: compute PSD of many waves.
 
 ## ykDL750
-version: _1.19v2
+version: _1.19_v3
 Procedure for controlling sources and measurement equipments
 
