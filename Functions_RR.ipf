@@ -21,8 +21,8 @@
 // AlignAtMaxV(wV,Voffset)
 // CutRangeVJ_v0(waveI,waveV,Vi,Vf)
 // CutRangeVJ_v1(waveI,waveV,Vi,Vf,RetSlope)
-
-
+// PlotTracesFromRange(wV,wI,Ni,Nf,dN)
+// AppendTracesFromRange(wV,wI,Ni,Nf,dN)
 
 
 Function EllipseCirc(LongAxis,ShortAxis)
@@ -640,3 +640,40 @@ Function CutRangeVJ_v1(waveI,waveV,Vi,Vf,RetSlope) //,outI,outV
 	Concatenate/O {wV_upX,wV_retX}, $UDwV
 	
 End
+
+
+
+// Given wV & wI a pair of 2D maps measurements of the voltage and current,
+// This functions plots, using dots, the selected traces in [Ni,Nf] at step dN
+Function PlotTracesFromRange(wV,wI,Ni,Nf,dN)
+	wave wV,wI
+	variable Ni,Nf,dN
+
+	PauseUpdate; Silent 1		// building window...
+	Display /W=(35.25,41.75,429.75,250.25) wI[Ni][*] vs wV[Ni][*]
+
+	variable i
+	For(i=Ni+1; i<Nf+1 ; i=i+dN)
+		AppendToGraph wI[i][*] vs wV[i][*]
+	EndFor
+	
+	ModifyGraph mode=2
+End
+
+
+// Given wV & wI a pair of 2D maps measurements of the voltage and current,
+// This functions appends to the active plot window, the selected traces in [Ni,Nf] at step dN
+Function AppendTracesFromRange(wV,wI,Ni,Nf,dN)
+
+	wave wV,wI
+	variable Ni,Nf,dN
+
+	variable i
+	For(i=Ni; i<Nf+1 ; i=i+dN)
+		AppendToGraph wI[i][*] vs wV[i][*]
+	EndFor
+	
+	ModifyGraph mode=2
+End
+
+
