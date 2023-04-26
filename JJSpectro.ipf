@@ -1,6 +1,9 @@
 #pragma TextEncoding = "UTF-8"
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
+
+
+
 Menu "JJ Spectro"
 
 	"Initialize", InitializeConstants()
@@ -22,6 +25,7 @@ Menu "JJ Spectro"
 	"Add a frequency axis on the axis opposite to the voltage", AddFreqAxis()
 	"Add a top axis with flux (for maps)", TopAxisFlux()
 	"Add a frequency axis on the axis opposite to the current",AddFreqAxisCurrent()
+	"Add a Sensibility axis on the axis opposite to the current",AddSensAxisCurrent()
 End
 
 
@@ -1072,6 +1076,18 @@ Function AmpereToHz(info)
 	return 0
 End
 
+//Modification by RHR 29-11-2019:
+Function AmpereToSens(info)
+	STRUCT WMAxisHookStruct &info
+	GetAxis/Q/W=$info.win $info.mastName	// get master (bottom) axis' range in V_min, V_Max
+	Variable minF =  sqrt(V_min/(2*1.6e-19))
+	Variable maxF =  sqrt(V_max/(2*1.6e-19))
+	info.min = minF	// new min for free axis
+	info.max= maxF	// new max for free axis
+	info.units = "Hz"
+	return 0
+End
+
 Function NiceMap()
 	ModifyGraph width=226.772*2,height=226.772*2
 	ModifyGraph margin(right)=150
@@ -1145,7 +1161,16 @@ Function AddFreqAxisCurrent()
 	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
 End
 
-
+//by Ramiro: 
+//AmpereToSens(info) function
+Function AddSensAxisCurrent()
+	ModifyGraph mirror(left)=0
+	ModifyGraph mirror(bottom)=2,axisOnTop=0	
+	NewFreeAxis/R rightax
+	Label rightax "Sensibility (\\U)"
+	ModifyFreeAxis rightax, master=left, hook=AmpereToSens
+	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
+End
 
 Function CurrentToFlux(info)
 	STRUCT WMAxisHookStruct &info
