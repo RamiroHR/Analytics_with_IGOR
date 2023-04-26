@@ -1,15 +1,16 @@
 # IGOR procedures
 
 ## ACL_WindowDesktops
-Allows to create multiple desktops within a single IGOR run for better data and plots organization. Include a Help file.
+version: single version.  
+Allows to create multiple desktops within a single IGOR run for better data and plots organization. Include a Help file.  
 
 ## Base
-version: _RRv1
-Basic set of functions for data analysis and visualisation.
-Updated XYZ3Matrix function to remove I_offset.
+version: _RRv1 (latest version)  
+Basic set of functions for data analysis and visualisation.  
+Updated XYZ3Matrix function to remove I_offset.  
 
 ## Functions_RR
-version: v7
+version: v7 (latest version)  
 Includes diverse functions created by me, such as:  
 
 Math
@@ -34,13 +35,14 @@ For AFM data analysis:
 - AlignAtMaxV (wV,Voffset)
 - CutRangeVJ_v0
 - CutRangeVJ_v1
-- PlotTracesFromRange #plot IV map traces selected by an index range [Ni,Nf] 
-- AppendTracesFromRange  # similar to previous but append to an existing plot
+- PlotTracesFromRange #---> plot IV map traces of index in range [Ni,Nf] 
+- AppendTracesFromRange #---> append to existing plot IV traces of index in range [Ni,Nf]
+
 
 
 ## JJSpectro
-version: v10_JG
-From script started by JG (<v10). I continue adding functionalities (>v10).
+version: _v11_RR  
+From script started by JG (<v10). I continue adding functionalities (>v10).  
 - Menu JJ spectro
 - InitializeConstants
 - FitRN
@@ -94,14 +96,16 @@ From script started by JG (<v10). I continue adding functionalities (>v10).
 - GetRvsTemp1
 - AmpereToHz
 - AddFreqAxisCurrent
+- AmpereToSens
+- AddSensAxisCurrent
 
 
 ## Procedure_noise_analysis
-version: v3
-Functions for computing spectral noise density and related signals.
+version: v3  (latest version)
+Functions for computing spectral noise density and related signals.  
 - Function PlotPSDs: compute PSD of many waves.
 
 ## ykDL750
-version: _1.19_v3
-Procedure for controlling sources and measurement equipments
+version: _1.21 (mainly CG)
+Procedure for controlling sources and measurement equipments.  
 
