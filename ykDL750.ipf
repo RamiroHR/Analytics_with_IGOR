@@ -1,9 +1,9 @@
 #pragma rtGlobals=1		// Use modern global access method.
-#pragma version=1.19
+#pragma version=1.21
 
 // CHANGES:
-// 1.18 Fixed saving Wave Note when Loading Data (no such function for sweeps)
-// 1.19 added Rigol sweep functionality to do radial sweeps on CH1/CH2
+// 1.21 added SweepScopeFlux to sweep flux in a better way
+// 1.20 added "Initialize_ykDL750(0)" to ykPanel in order to force config directory creation
 				
 #pragma IgorVersion = 6.3
 		
@@ -13,7 +13,7 @@
 //
 //	Package ykDL750 interfaces Yokogawa DL 750 Oscilloscope to Igor Pro through GPIB.
 //
-//	requires VISA xop and GQ Base.ipf
+//	requires VISA xop and GQ Base.ipf 
 //
 //	2016.08.12
 
@@ -34,12 +34,13 @@
 #if Exists("viOpen") 		// Only include this code if the VISA xop and Base.ipf is available
 						// otherwise few functions will work.
 						
-//#include <Execute Cmd On List>
-// BEGIN Macros
+//#include <Execute Cmd On List>  
+// BEGIN Macros 
 //
 Menu "ykDL750"
 	"Yoko DL750",ykPanel()
 	"Sweep Scope",SweepScopePanel()
+	"Sweep Scope Flux", SweepScopeFluxPanel()
 	"DoubleSweep Scope",SweepScopePanel_Twice()
 	"Rigol Sweep Scope",SweepScopePanel_R()
 
@@ -49,9 +50,11 @@ End
 
 // BEGIN Constants
 // 
+//StrConstant kGPIBn = "GPIB1"
 StrConstant kGPIBn = "GPIB0"
 
 // Yokogawa DL750 with DSP
+//StrConstant kAddress = "GPIB1::8::INSTR"
 StrConstant kAddress = "GPIB0::11::INSTR"  
 Constant kNumDSP = 6
 
@@ -145,7 +148,7 @@ Function Initialize_ykDL750(reinit,[gpibaddress])
 		Variable/G yoko7651step = 1e-6
 		Variable/G yoko7651numpnts = 301
 		Variable/G yoko7651currpnt = NaN
-		
+	
 		Make/O/N=(yoko7651numpnts) yoko7651loopwave = yoko7651initialvalue + p*yoko7651step
 		SetScale d,0,0,"A",yoko7651loopwave
 		
@@ -160,6 +163,24 @@ Function Initialize_ykDL750(reinit,[gpibaddress])
 
 		Make/O/N=(yoko7651numpnts) yoko7651loopwave2 = yoko7651initialvalue2 + p*yoko7651step2
 		SetScale d,0,0,"A",yoko7651loopwave2
+	
+	
+		// For Flux Sweeps
+		Variable/G yoko7651phizero1 = 0
+		Variable/G yoko7651phi2pi1 = 1e-6
+		Variable/G yoko7651phi01 = 0
+		Variable/G yoko7651phi11 = 1
+		
+		Variable/G yoko7651phizero2 = 0
+		Variable/G yoko7651phi2pi2 = 1e-6
+		Variable/G yoko7651phi02 = 0
+		Variable/G yoko7651phi12 = 1
+
+		// For Flux compensation
+		Variable/G yoko7651gamma12 = 0
+		
+		// For sinusoidal flux compensation
+		Variable/G yoko7651sinamp = 0	
 		
 				
 		// Prepare Rigol 1032Z 1
@@ -1283,11 +1304,9 @@ Function ShowLegendCheckProc(cba) : CheckBoxControl
 End
 
 Window ykPanel() : Panel
-	String fldrSav0= GetDataFolder(1)
-	Initialize_ykDL750(0)
-	SetDataFolder root:Packages:GQ:ykDL750
-
-	NewPanel /W=(610,127,852,624) as "Yokogawa DL750 Scope"
+   Initialize_ykDL750(0)
+	PauseUpdate; Silent 1		// building window...
+	NewPanel /W=(610,127,952,624) as "Yokogawa DL750 Scope"
 	ShowTools/A
 	SetDrawLayer UserBack
 	SetDrawEnv fstyle= 1
@@ -1296,36 +1315,38 @@ Window ykPanel() : Panel
 	DrawText 43,138,"Trace Information"
 	SetDrawEnv fstyle= 1
 	DrawText 82,241,"Wave Note"
-	Button LoadData,pos={14,442},size={218,45},proc=LoadDataButtonProc,title="Load Data"
+	Button LoadData,pos={14.00,442.00},size={218.00,45.00},proc=LoadDataButtonProc,title="Load Data"
 	Button LoadData,fStyle=1
-	SetVariable Basename,pos={8,414},size={31,16},title=" "
+	SetVariable Basename,pos={8.00,414.00},size={60.00,18.00},title=" "
 	SetVariable Basename,help={"Base name of data series"}
-	SetVariable Basename,limits={-inf,inf,0},value= basename
-	SetVariable FileIndex,pos={42,414},size={45,16},title=" ",format="%04d"
-	SetVariable FileIndex,limits={0,9999,1},value= fileIndex
-	SetVariable FilePath,pos={7,388},size={232,16},title=" "
+	SetVariable Basename,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:basename
+	SetVariable FileIndex,pos={133.00,414.00},size={45.00,18.00},title=" "
+	SetVariable FileIndex,format="%04d"
+	SetVariable FileIndex,limits={0,9999,1},value= root:Packages:GQ:ykDL750:fileIndex
+	SetVariable FilePath,pos={7.00,388.00},size={318.00,18.00},title=" "
 	SetVariable FilePath,help={"File path to save data"}
-	SetVariable FilePath,value= filePathStr
-	CheckBox GraphStyle,pos={16,364},size={79,14},title="Graph Style?"
-	CheckBox GraphStyle,variable= graphStyle,side= 1
-	CheckBox ShowLegend,pos={8,344},size={86,14},proc=ShowLegendCheckProc,title="Show legend?"
-	CheckBox ShowLegend,variable= showLegend,side= 1
-	Edit/W=(9,33,229,216)/HOST=#  traceSettings.ld
+	SetVariable FilePath,value= root:Packages:GQ:ykDL750:filePathStr
+	CheckBox GraphStyle,pos={16.00,364.00},size={80.00,15.00},title="Graph Style?"
+	CheckBox GraphStyle,variable= root:Packages:GQ:ykDL750:graphStyle,side= 1
+	CheckBox ShowLegend,pos={8.00,344.00},size={88.00,15.00},proc=ShowLegendCheckProc,title="Show legend?"
+	CheckBox ShowLegend,variable= root:Packages:GQ:ykDL750:showLegend,side= 1
+	String fldrSav0= GetDataFolder(1)
+	SetDataFolder root:Packages:GQ:ykDL750:
+	Edit/W=(9,33,328,216)/HOST=#  traceSettings.ld
 	ModifyTable frameStyle= 5,format(Point)=1,width(traceSettings.l)=36,alignment(traceSettings.d)=1
 	ModifyTable width(traceSettings.d)=82,width[2]=96,width[3]=32,width[4]=44
 	ModifyTable showParts=0x65
 	ModifyTable statsArea=85
+	SetDataFolder fldrSav0
 	RenameWindow #,T0
 	SetActiveSubwindow ##
-	NewNotebook /F=0 /N=Trace_Note /W=(7,245,228,329) /HOST=# 
-	Notebook kwTopWin, defaultTab=20, statusWidth=0, autoSave=1
+	NewNotebook /F=0 /N=Trace_Note /W=(7,245,328,329) /HOST=# 
+	Notebook kwTopWin, defaultTab=20, autoSave= 1
 	Notebook kwTopWin font="Arial", fSize=10, fStyle=0, textRGB=(0,0,0)
 	Notebook kwTopWin, zdata= "GaqDU%ejN7!Z)%D?io>lbN?PWL]d_/WWX="
 	Notebook kwTopWin, zdataEnd= 1
 	RenameWindow #,Trace_Note
 	SetActiveSubwindow ##
-
-	SetDataFolder fldrSav0
 EndMacro
 
 Window SweepScopePanel1() : Panel
@@ -1391,58 +1412,57 @@ EndMacro
 
 Window SweepScopePanel() : Panel
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /W=(1348,74,1647,671) as "Sweep and Scope"
+	NewPanel /W=(973,74,1272,671) as "Sweep and Scope"
 	SetDrawLayer UserBack
 	SetDrawEnv fstyle= 1
 	DrawText 64,25,"Data Information"
 	Button StartButton,pos={12.00,475.00},size={102.00,41.00},proc=ControlSweepProc,title="Start"
 	Button StartButton,fStyle=1,fColor=(40960,65280,16384)
-	SetVariable Basename,pos={8.00,257.00},size={31.00,17.00},title=" "
+	SetVariable Basename,pos={8.00,257.00},size={31.00,18.00},title=" "
 	SetVariable Basename,help={"Base name of data series"}
 	SetVariable Basename,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:basename
-	SetVariable FileIndex,pos={42.00,257.00},size={45.00,17.00},title=" "
+	SetVariable FileIndex,pos={42.00,257.00},size={45.00,18.00},title=" "
 	SetVariable FileIndex,format="%04d"
 	SetVariable FileIndex,limits={0,9999,1},value= root:Packages:GQ:ykDL750:fileIndex
-	SetVariable FilePath,pos={7.00,234.00},size={228.00,17.00},title=" "
+	SetVariable FilePath,pos={7.00,234.00},size={228.00,18.00},title=" "
 	SetVariable FilePath,help={"File path to save data"}
 	SetVariable FilePath,value= root:Packages:GQ:ykDL750:filePathStr
-	SetVariable yoko7651address,pos={6.00,291.00},size={135.00,17.00},title=" Yoko 7651 GPIB"
+	SetVariable yoko7651address,pos={6.00,291.00},size={135.00,18.00},title=" Yoko 7651 GPIB"
 	SetVariable yoko7651address,format="%2d"
 	SetVariable yoko7651address,limits={0,21,1},value= root:Packages:GQ:ykDL750:yoko7651address
-	CheckBox yoko7651currentsrc,pos={171.00,291.00},size={104.00,14.00},proc=UpdateCurrentSrcProc,title="Source Current?"
+	CheckBox yoko7651currentsrc,pos={171.00,291.00},size={99.00,15.00},proc=UpdateCurrentSrcProc,title="Source Current?"
 	CheckBox yoko7651currentsrc,variable= root:Packages:GQ:ykDL750:yoko7651currentsrc
-	SetVariable yoko7651initialvalue,pos={11.00,321.00},size={124.00,17.00},proc=UpdateSweepParamsProc,title="Initial Value"
+	SetVariable yoko7651initialvalue,pos={11.00,321.00},size={124.00,18.00},proc=UpdateSweepParamsProc,title="Initial Value"
 	SetVariable yoko7651initialvalue,format="%g"
 	SetVariable yoko7651initialvalue,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651initialvalue
-	SetVariable yoko7651finalvalue,pos={13.00,341.00},size={119.00,17.00},proc=UpdateSweepParamsProc,title="Final Value"
+	SetVariable yoko7651finalvalue,pos={13.00,341.00},size={119.00,18.00},proc=UpdateSweepParamsProc,title="Final Value"
 	SetVariable yoko7651finalvalue,format="%g"
 	SetVariable yoko7651finalvalue,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651finalvalue
-	SetVariable yoko7651step,pos={43.00,362.00},size={93.00,17.00},proc=UpdateSweepParamsProc,title="Step"
+	SetVariable yoko7651step,pos={43.00,362.00},size={93.00,18.00},proc=UpdateSweepParamsProc,title="Step"
 	SetVariable yoko7651step,format="%.3g"
 	SetVariable yoko7651step,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651step
-	SetVariable yoko7651numpnts,pos={26.00,383.00},size={109.00,17.00},proc=UpdateSweepParamsProc,title="# Points"
+	SetVariable yoko7651numpnts,pos={26.00,383.00},size={109.00,18.00},proc=UpdateSweepParamsProc,title="# Points"
 	SetVariable yoko7651numpnts,format="%d"
 	SetVariable yoko7651numpnts,limits={1,inf,0},value= root:Packages:GQ:ykDL750:yoko7651numpnts
 	Button PauseButton,pos={13.00,532.00},size={102.00,41.00},proc=ControlSweepProc,title="Pause"
 	Button PauseButton,fStyle=1
-	SetVariable yoko7651currpnt,pos={7.00,417.00},size={134.00,17.00},title="Current Point"
+	SetVariable yoko7651currpnt,pos={7.00,417.00},size={134.00,18.00},title="Current Point"
 	SetVariable yoko7651currpnt,format="%g",fStyle=1
 	SetVariable yoko7651currpnt,limits={1,inf,0},value= root:Packages:GQ:ykDL750:yoko7651currpnt,noedit= 1
 	GroupBox EditTraceSettings,pos={4.00,282.00},size={290.00,130.00}
-	PopupMenu ScaleAxis,pos={132.00,452.00},size={88.00,17.00},title="Scale Axis:"
+	PopupMenu ScaleAxis,pos={132.00,452.00},size={85.00,19.00},title="Scale Axis:"
 	PopupMenu ScaleAxis,help={"Choose the channel number for scaling the data axes (0 for no scaling)"}
 	PopupMenu ScaleAxis,mode=1,popvalue="0",value= #"\"0;\"+WaveToString(root:Packages:GQ:ykDL750:tracew)"
-	CheckBox TransposeCheck,pos={133.00,480.00},size={77.00,14.00},title="Transpose?"
+	CheckBox TransposeCheck,pos={133.00,480.00},size={73.00,15.00},title="Transpose?"
 	CheckBox TransposeCheck,help={"Fast axis is acquired along x-direction. Check to transpose final matrix."}
 	CheckBox TransposeCheck,value= 1,side= 1
 	Button SwapButton,pos={170.00,329.00},size={50.00,20.00},proc=SwapButtonProc,title="Swap"
-	CheckBox NoSweepCheck,pos={171.00,309.00},size={72.00,14.00},proc=NoSweepCheckProc,title="No Sweep"
+	CheckBox NoSweepCheck,pos={171.00,309.00},size={68.00,15.00},proc=NoSweepCheckProc,title="No Sweep"
 	CheckBox NoSweepCheck,value= 0
 	String fldrSav0= GetDataFolder(1)
 	SetDataFolder root:Packages:GQ:ykDL750:
 	Edit/W=(9,33,282,216)/HOST=#  traceSettings.ld
 	ModifyTable frameStyle= 5,format(Point)=1,width(traceSettings.l)=38,alignment(traceSettings.d)=1
-	//	ModifyTable width(traceSettings.d)=78
 	ModifyTable width(traceSettings.d)=82,width[2]=150,width[3]=35,width[4]=44
 	ModifyTable showParts=0x45
 	ModifyTable statsArea=85
@@ -1521,6 +1541,120 @@ Window SweepScopePanel_Twice() : Panel
 	ModifyTable statsArea=85
 	SetDataFolder fldrSav0
 	RenameWindow #,T0
+	SetActiveSubwindow ##
+EndMacro
+
+Window SweepScopeFluxPanel() : Panel
+	PauseUpdate; Silent 1		// building window...
+	NewPanel /W=(1162,227,1613,1218) as "Sweep Scope Flux"
+	SetDrawLayer UserBack
+	SetDrawEnv fstyle= 1
+	DrawText 64,25,"Data Information"
+	Button StartButton,pos={10.00,552.00},size={102.00,41.00},proc=ControlSweepProc_Twice,title="Start"
+	Button StartButton,fStyle=1,fColor=(40960,65280,16384)
+	SetVariable Basename,pos={8.00,257.00},size={78.00,17.00},title=" "
+	SetVariable Basename,help={"Base name of data series"}
+	SetVariable Basename,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:basename
+	SetVariable FileIndex,pos={133.00,257.00},size={71.00,17.00},title=" "
+	SetVariable FileIndex,format="%04d"
+	SetVariable FileIndex,limits={0,9999,1},value= root:Packages:GQ:ykDL750:fileIndex
+	SetVariable FilePath,pos={7.00,234.00},size={314.00,17.00},title=" "
+	SetVariable FilePath,help={"File path to save data"}
+	SetVariable FilePath,value= root:Packages:GQ:ykDL750:filePathStr
+	SetVariable yoko7651address,pos={6.00,291.00},size={135.00,17.00},title=" Yoko 7651 GPIB"
+	SetVariable yoko7651address,format="%2d"
+	SetVariable yoko7651address,limits={0,21,1},value= root:Packages:GQ:ykDL750:yoko7651address
+	CheckBox yoko7651currentsrc,pos={171.00,291.00},size={104.00,14.00},proc=UpdateCurrentSrcProc,title="Source Current?"
+	CheckBox yoko7651currentsrc,variable= root:Packages:GQ:ykDL750:yoko7651currentsrc
+	SetVariable yoko7651initialvalue,pos={149.00,319.00},size={87.00,17.00},proc=UpdateFluxSweepParamsProc,title="A:"
+	SetVariable yoko7651initialvalue,format="%g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651initialvalue,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651initialvalue,noedit= 1
+	SetVariable yoko7651finalvalue,pos={148.00,338.00},size={88.00,17.00},proc=UpdateFluxSweepParamsProc,title="A:"
+	SetVariable yoko7651finalvalue,format="%g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651finalvalue,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651finalvalue,noedit= 1
+	SetVariable yoko7651step,pos={134.00,358.00},size={101.00,17.00},proc=UpdateFluxSweepParamsProc,title="Step"
+	SetVariable yoko7651step,format="%.3g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651step,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651step,noedit= 1
+	Button PauseButton,pos={327.00,553.00},size={102.00,41.00},proc=ControlSweepProc,title="Pause"
+	Button PauseButton,fStyle=1
+	SetVariable yoko7651currpnt,pos={141.00,573.00},size={148.00,17.00},title="Current Point"
+	SetVariable yoko7651currpnt,format="%g",fStyle=1,valueColor=(65535,32768,32768)
+	SetVariable yoko7651currpnt,limits={1,inf,0},value= root:Packages:GQ:ykDL750:yoko7651currpnt,noedit= 1
+	CheckBox TransposeCheck,pos={27.00,517.00},size={77.00,14.00},title="Transpose?"
+	CheckBox TransposeCheck,help={"Fast axis is acquired along x-direction. Check to transpose final matrix."}
+	CheckBox TransposeCheck,value= 1,side= 1
+	Button SwapButton,pos={293.00,287.00},size={50.00,20.00},proc=SwapButtonProc,title="Swap"
+	SetVariable yoko7651address2,pos={11.00,392.00},size={135.00,17.00},title=" Yoko 7651 GPIB"
+	SetVariable yoko7651address2,format="%2d"
+	SetVariable yoko7651address2,limits={0,21,1},value= root:Packages:GQ:ykDL750:yoko7651address2
+	CheckBox yoko7651currentsrc2,pos={169.00,397.00},size={104.00,14.00},proc=UpdateCurrentSrcProc,title="Source Current?"
+	CheckBox yoko7651currentsrc2,variable= root:Packages:GQ:ykDL750:yoko7651currentsrc2
+	GroupBox EditTraceSettings2,pos={5.00,388.00},size={440.00,122.00}
+	Button SwapButton3,pos={297.00,394.00},size={50.00,20.00},proc=SwapButtonProc,title="Swap"
+	GroupBox EditTraceSettings4,pos={4.00,280.00},size={442.00,105.00}
+	SetVariable phizero1,pos={250.00,318.00},size={187.00,17.00},proc=UpdateFluxSweepParamsProc,title="Zero Phase Current"
+	SetVariable phizero1,format="%g"
+	SetVariable phizero1,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phizero1
+	SetVariable phi2pi1,pos={260.00,337.00},size={177.00,17.00},proc=UpdateFluxSweepParamsProc,title="2Pi Phase Current"
+	SetVariable phi2pi1,format="%g"
+	SetVariable phi2pi1,limits={1e-009,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi2pi1
+	SetVariable phi01,pos={15.00,319.00},size={124.00,17.00},proc=UpdateFluxSweepParamsProc,title="Initial Phase"
+	SetVariable phi01,format="%g"
+	SetVariable phi01,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi01
+	SetVariable phi11,pos={21.00,338.00},size={117.00,17.00},proc=UpdateFluxSweepParamsProc,title="Final Phase"
+	SetVariable phi11,format="%g"
+	SetVariable phi11,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi11
+	SetVariable yoko7651initialvalue2,pos={151.00,424.00},size={87.00,17.00},proc=UpdateFluxSweepParamsProc,title="A:"
+	SetVariable yoko7651initialvalue2,format="%g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651initialvalue2,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651initialvalue2,noedit= 1
+	SetVariable yoko7651finalvalue2,pos={150.00,443.00},size={88.00,17.00},proc=UpdateFluxSweepParamsProc,title="A:"
+	SetVariable yoko7651finalvalue2,format="%g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651finalvalue2,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651finalvalue2,noedit= 1
+	SetVariable yoko7651step2,pos={137.00,463.00},size={101.00,17.00},proc=UpdateFluxSweepParamsProc,title="Step"
+	SetVariable yoko7651step2,format="%.3g",valueColor=(65535,32768,32768)
+	SetVariable yoko7651step2,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651step2,noedit= 1
+	SetVariable phi02,pos={18.00,426.00},size={124.00,17.00},proc=UpdateFluxSweepParamsProc,title="Initial Phase"
+	SetVariable phi02,format="%g"
+	SetVariable phi02,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi02
+	SetVariable phi12,pos={24.00,445.00},size={117.00,17.00},proc=UpdateFluxSweepParamsProc,title="Final Phase"
+	SetVariable phi12,format="%g"
+	SetVariable phi12,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi12
+	SetVariable phizero2,pos={245.00,426.00},size={190.00,17.00},proc=UpdateFluxSweepParamsProc,title="Zero Phase Current"
+	SetVariable phizero2,format="%g"
+	SetVariable phizero2,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phizero2
+	SetVariable phi2pi2,pos={291.00,445.00},size={144.00,17.00},proc=UpdateFluxSweepParamsProc,title="2Pi Current"
+	SetVariable phi2pi2,format="%g"
+	SetVariable phi2pi2,limits={1e-009,inf,0},value= root:Packages:GQ:ykDL750:yoko7651phi2pi2
+	SetVariable sinamp,pos={269.00,486.00},size={168.00,17.00},proc=UpdateFluxSweepParamsProc,title="Sine Amplitude"
+	SetVariable sinamp,format="%g"
+	SetVariable sinamp,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651sinamp
+	SetVariable gamma12,pos={271.00,466.00},size={165.00,17.00},proc=UpdateFluxSweepParamsProc,title="Mutual gamma"
+	SetVariable gamma12,format="%g"
+	SetVariable gamma12,limits={-inf,inf,0},value= root:Packages:GQ:ykDL750:yoko7651gamma12
+	SetVariable yoko7651numpnts,pos={179.00,549.00},size={109.00,17.00},proc=UpdateFluxSweepParamsProc,title="# Points"
+	SetVariable yoko7651numpnts,format="%d"
+	SetVariable yoko7651numpnts,limits={1,inf,0},value= root:Packages:GQ:ykDL750:yoko7651numpnts
+	String fldrSav0= GetDataFolder(1)
+	SetDataFolder root:Packages:GQ:ykDL750:
+	Edit/W=(9,33,438,216)/HOST=#  traceSettings.ld
+	ModifyTable frameStyle= 5,format(Point)=1,width(traceSettings.l)=38,alignment(traceSettings.d)=1
+	ModifyTable width(traceSettings.d)=82,width[2]=250,width[3,4]=50
+	ModifyTable showParts=0x45
+	ModifyTable statsArea=85
+	SetDataFolder fldrSav0
+	RenameWindow #,T0
+	SetActiveSubwindow ##
+	String fldrSav1= GetDataFolder(1)
+	SetDataFolder root:Packages:GQ:ykDL750:
+	Display/W=(8,607,443,983)/HOST=#  yoko7651loopwave2 vs yoko7651loopwave
+	SetDataFolder fldrSav1
+	Label left "Current Yoko 2 (\\U)"
+	Label bottom "Current Yoko 1 (\\U)"
+	ModifyGraph mode=3
+	ModifyGraph marker=19
+	ModifyGraph rgb=(39168,0,15616)
+	ModifyGraph msize=1
+	RenameWindow #,G0
 	SetActiveSubwindow ##
 EndMacro
 
@@ -1644,6 +1778,120 @@ Function UpdateSweepParamsProc(sva) : SetVariableControl
 		loopwave2 = initval2 + p*step2
 	endif
 
+	SetDataFolder saveDFR
+
+	return status
+End
+
+Function UpdateFluxSweepParamsProc(sva) : SetVariableControl
+	STRUCT WMSetVariableAction &sva
+
+	DFREF saveDFR = GetDataFolderDFR()
+	
+	Variable status = 0
+	Variable currperiod1, currperiod2
+	
+	SetDataFolder root:Packages:GQ:ykDL750
+	
+	// Linear part
+	
+	NVAR initval = yoko7651initialvalue
+	NVAR finalval = yoko7651finalvalue
+	NVAR step = yoko7651step
+	NVAR npnts = yoko7651numpnts
+
+	NVAR initval2 = yoko7651initialvalue2
+	NVAR finalval2 = yoko7651finalvalue2
+	NVAR step2 = yoko7651step2
+
+
+	// Conversions from current to flux
+
+	NVAR phizero1 = yoko7651phizero1		// Bias current offset for zero flux
+	NVAR phi2pi1 = yoko7651phi2pi1  		// Bias current equivalent to one flux quantum
+		
+	NVAR phizero2 = yoko7651phizero2
+	NVAR phi2pi2 = yoko7651phi2pi2
+
+	// Mutual coupling
+	// Flux compensation only applied to yoko 2
+	// Usually should be negative
+	NVAR gamma12 = yoko7651gamma12 	// Mutual coupling: slope given by (compensating phase shift for yoko2)/(phase shift yoko1)
+	
+
+	// Sinusoidal part, leave sinamp = 0 for no nonlinearity
+	// Amplitude for sinusoidal part, always applied to yoko 7651 2
+	// Units of current!
+	NVAR sinamp = yoko7651sinamp
+	
+
+	// Desired sweep values, in units of 2pi flux
+	NVAR phi01 = yoko7651phi01
+	NVAR phi11 = yoko7651phi11
+	
+	NVAR phi02 = yoko7651phi02
+	NVAR phi12 = yoko7651phi12
+
+
+	// Waves containing current sweep values	
+
+	WAVE loopwave = yoko7651loopwave
+	WAVE loopwave2 = yoko7651loopwave2
+
+	
+	// some error correction	
+	if(phi2pi1 == 0)
+		phi2pi1 = 10e-6
+		status = -1
+	endif
+	
+	if(phi2pi2 == 0)
+		phi2pi1 = 10e-6
+		status = -1
+	endif
+	
+	if(npnts == 0)
+		npnts = 8
+		status = -1
+	endif
+
+
+	Redimension/N=(npnts) loopwave, loopwave2
+	
+	// Process changes to parameters
+	
+	step = (phi11-phi01)/(npnts-1)*phi2pi1
+	initval = phizero1 + phi01*phi2pi1
+	finalval = phizero1 + phi11*phi2pi1
+			
+	// Yoko 2 linear part 
+	step2 = (phi12-phi02)/(npnts-1)*phi2pi2
+	initval2 = phizero2 + phi02*phi2pi2
+	finalval2 = phizero2 + phi12*phi2pi2
+			
+	// Yoko 2 flux compensation
+	step2 += gamma12*(phi11-phi01)/(npnts-1)*phi2pi1
+	initval2 += gamma12*phi01/(npnts-1)*phi2pi1
+	finalval2 += gamma12*phi11/(npnts-1)*phi2pi1
+			
+	ControlInfo yoko7651currentsrc
+	if(V_Value)
+		SetScale d,0,0,"A",loopwave, loopwave2
+		
+	else
+		SetScale d,0,0,"V",loopwave, loopwave2
+	endif
+			
+	loopwave = initval + p*step
+
+	// Old linear sweep:
+	// loopwave2 = initval2 + p*step2
+	
+	// New sinusoidal sweep:
+	//loopwave2 = initval2 + p*step2 + sinamp*sin(2*pi*(p*step2+initval2-phizero2)/phi2pi2)
+	loopwave2 = initval2 + p*step2 + sinamp*sin(2*pi*(initval + p*step)/phi2pi2)
+	//loopwave2 = initval2 + p*step2 + sinamp*sin(2*pi*(initval + p*step)/phi2pi1)
+	
 	SetDataFolder saveDFR
 
 	return status
@@ -2101,7 +2349,7 @@ Function ControlRigolSweepProc(ba) : ButtonControl
 	
 	Variable err = 0, status
 	
-	SetDataFolder root:Packages:GQ:ykDL750
+	SetDataFolder root:Packages:GQ:ykDL750 
 
 	SVAR address, basename, filePathStr
 	NVAR fileIndex
