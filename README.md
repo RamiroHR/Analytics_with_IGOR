@@ -41,8 +41,8 @@ For AFM data analysis:
 
 
 ## JJSpectro
-version: _v11_RR  
-From script started by JG (<v10). I continue adding functionalities (>v10).  
+version: _v12_RR  
+From script started by JG (<v10), I continue adding functionalities (>v10).  
 - Menu JJ spectro
 - InitializeConstants
 - FitRN
@@ -98,7 +98,12 @@ From script started by JG (<v10). I continue adding functionalities (>v10).
 - AddFreqAxisCurrent
 - AmpereToSens
 - AddSensAxisCurrent
-
+- PhaseToFlux
+- AddFluxAxisPhase
+- FluxToPhase
+- AddPhaseAxisFlux
+- ReduceMapResolution_Y
+- ReduceWavePointsTo
 
 ## Procedure_noise_analysis
 version: v3  (latest version)
