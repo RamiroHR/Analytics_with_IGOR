@@ -26,6 +26,8 @@ Menu "JJ Spectro"
 	"Add a top axis with flux (for maps)", TopAxisFlux()
 	"Add a frequency axis on the axis opposite to the current",AddFreqAxisCurrent()
 	"Add a Sensibility axis on the axis opposite to the current",AddSensAxisCurrent()
+	"Add top flux axis from bottom phase axis",AddFluxAxisPhase()
+	"Add top phase axis from bottom flux axis",AddPhaseAxisFlux()
 End
 
 
@@ -1088,6 +1090,17 @@ Function AmpereToSens(info)
 	return 0
 End
 
+//by Ramiro: 
+//AmpereToSens(info) function
+Function AddSensAxisCurrent()
+	ModifyGraph mirror(left)=0
+	ModifyGraph mirror(bottom)=2,axisOnTop=0	
+	NewFreeAxis/R rightax
+	Label rightax "Sensibility (\\U)"
+	ModifyFreeAxis rightax, master=left, hook=AmpereToSens
+	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
+End
+
 Function NiceMap()
 	ModifyGraph width=226.772*2,height=226.772*2
 	ModifyGraph margin(right)=150
@@ -1128,13 +1141,15 @@ Function PlotAll2DWaves()
 End
 
 Function AddFreqAxis()
+//2020-09-16 RHR: to avoid adding a mirror axis to the axis that is not transformed.
+
 	String ImageList = ImageNameList("",";")
 	
 	If(CmpStr(ImageList,""))
 	//In that case, there is an image
 	//Axis is to be added on the right
 		Modifygraph mirror(left)=0
-		ModifyGraph mirror(bottom)=2,axisOnTop=0
+		//ModifyGraph mirror(bottom)=2,axisOnTop=0
 		NewFreeAxis/R rightax
 		Label rightax "Frequency (\\U)"
 		ModifyFreeAxis rightax, master=left, hook=VoltToHz
@@ -1144,7 +1159,7 @@ Function AddFreqAxis()
 		//In that case, there is no image. Only 1D traces
 		//Axis is to be added at the top
 		ModifyGraph mirror(bottom)=0
-		ModifyGraph mirror(left)=2,axisOnTop=0	
+		//ModifyGraph mirror(left)=2,axisOnTop=0	
 		NewFreeAxis/T topax
 		Label topax "Frequency (\\U)"
 		ModifyFreeAxis topax, master=bottom, hook=VoltToHz
@@ -1161,16 +1176,6 @@ Function AddFreqAxisCurrent()
 	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
 End
 
-//by Ramiro: 
-//AmpereToSens(info) function
-Function AddSensAxisCurrent()
-	ModifyGraph mirror(left)=0
-	ModifyGraph mirror(bottom)=2,axisOnTop=0	
-	NewFreeAxis/R rightax
-	Label rightax "Sensibility (\\U)"
-	ModifyFreeAxis rightax, master=left, hook=AmpereToSens
-	ModifyGraph tick(rightax)=0,lblPos(rightax)=50,freePos(rightax)={0,kwFraction}	
-End
 
 Function CurrentToFlux(info)
 	STRUCT WMAxisHookStruct &info
@@ -1421,3 +1426,123 @@ Function GetRvsTemp1(Vw,Iw,Tw,Rname,Tname)
 	Label bottom "Temperature (\\U)"
 End
 
+//=========================================================================================================
+//===== Add top axis in flux from a bottom axis in phase. For 2D maps  ====================================
+Function PhaseToFlux(info)
+//transform phase (in units of pi) to flux (in units of flux quantum)
+	STRUCT WMAxisHookStruct &info
+	GetAxis/Q/W=$info.win $info.mastName	// get master (bottom) axis' range in V_min, V_Max
+	Variable minF =  V_min/2.0
+	Variable maxF =  V_max/2.0
+	info.min = minF	// new min for free axis
+	info.max= maxF	// new max for free axis
+	info.units = "Φ\B0\M"
+	return 0
+End
+
+//by Ramiro: 
+//AmpereToSens(info) function
+Function AddFluxAxisPhase()
+	//ModifyGraph mirror(left)=0
+	//ModifyGraph mirror(bottom)=2,axisOnTop=0	
+	NewFreeAxis/T topax
+	Label topax "RF-squid Flux (\\U)"
+	ModifyFreeAxis topax, master=bottom, hook=PhaseToFlux
+	ModifyGraph tick(topax)=0,lblPos(topax)=50,freePos(topax)={0,kwFraction}	
+End
+
+//=========================================================================================================
+//===== Add top axis in phase from a bottom axis in flux. For 2D maps  ====================================
+Function FluxToPhase(info)
+//transform phase (in units of pi) to flux (in units of flux quantum)
+	STRUCT WMAxisHookStruct &info
+	GetAxis/Q/W=$info.win $info.mastName	// get master (bottom) axis' range in V_min, V_Max
+	Variable minPh =  V_min*2.0
+	Variable maxPh =  V_max*2.0
+	info.min = minPh	// new min for free axis
+	info.max= maxPh	// new max for free axis
+	info.units = "π"
+	return 0
+End
+
+//by Ramiro: 
+//AmpereToSens(info) function
+Function AddPhaseAxisFlux()
+	//ModifyGraph mirror(left)=0
+	//ModifyGraph mirror(bottom)=2,axisOnTop=0	
+	NewFreeAxis/T topax
+	Label topax "RF-squid Phase (\\U)"
+	ModifyFreeAxis topax, master=bottom, hook=FluxToPhase
+	ModifyGraph tick(topax)=0,lblPos(topax)=50,freePos(topax)={0,kwFraction}	
+End
+
+
+
+Function ReduceMapResolution_Y(w0,mx,my)
+//Reduce resolution of a map:
+//reduce the number of point in x, or y, direction by 1/mx, or 1/my.
+// it takes the firs value of each set of mx or my point.
+// I do not take the average since it will smooth the data.
+// points must not be averaged is conditions are differents (Voltage or phase)
+
+	Wave w0
+	variable mx,my
+	Variable N0x,N0y,N1x,N1y
+	
+	N0x=dimsize(w0,0)
+	N0y=dimsize(w0,1)
+	N1x=floor(N0x/mx)
+	N1y=floor(N0y/my)
+	
+	string newname = NameofWave(w0)+"r"
+	Duplicate/O/R=[0,N1x][0,N1y] w0 $newname
+	Wave w1 = $newname
+	
+	Variable i,j
+	
+	For(i=0;i<N1x;i+=1)
+	//print i
+		For(j=0;j<N1y;j+=1)
+			//w1[i][j]=(w0[i][2*j]+w0[i][2*j+1])/2
+			w1[i][j]=w0[mx*i][my*j]
+		Endfor
+	Endfor
+
+	setscale/P x,dimoffset(w0,0),dimdelta(w0,0)*mx,waveunits(w0,0), w1
+	setscale/P y,dimoffset(w0,1),dimdelta(w0,1)*my,waveunits(w0,1), w1
+End
+
+
+
+Function ReduceWavePointsTo(wI,wV,Ntarget)
+//Reduce the number of points to Ntarget for waves w1 and w2
+	Wave wI,wV
+	Variable Ntarget
+	Variable n=numpnts(wI)
+	
+	Variable i
+	Variable dn=floor(n/Ntarget)+1
+	print "dn=",dn
+	Variable Nt=floor(n/dn)
+	print "approx to target target, Nt=",Nt
+	Make/FREE/N=(Nt) wd1,wd2
+
+	For(i=0;i<Nt;i++)
+//		wd1[i]=(wI[2*i]+wI[2*i+1])/2
+//		wd2[i]=(wV[2*i]+wV[2*i+1])/2
+		if((i+1)*dn < n)
+			wd1[i]=mean(wI, pnt2x(wI,i*dn), pnt2x(wI,(i+1)*dn))
+			wd2[i]=mean(wV, pnt2x(wV,i*dn), pnt2x(wV,(i+1)*dn))
+		else
+			wd1[i]=mean(wI, pnt2x(wI,i*dn), pnt2x(wI,n))
+			wd2[i]=mean(wV, pnt2x(wV,i*dn), pnt2x(wV,n))
+		endif
+	Endfor
+
+	string newname1 = NameofWave(wI)+"r"
+	string newname2 = NameofWave(wV)+"r"
+	Duplicate/O wd1 $newname1
+	Duplicate/O wd2 $newname2
+
+
+End
