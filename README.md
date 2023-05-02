@@ -1,7 +1,7 @@
 # IGOR procedures
 
 ## ACL_WindowDesktops
-version: single version.  
+version: single version (latest) 
 Allows to create multiple desktops within a single IGOR run for better data and plots organization. Include a Help file.  
 
 ## Base
@@ -111,6 +111,6 @@ Functions for computing spectral noise density and related signals.
 - Function PlotPSDs: compute PSD of many waves.
 
 ## ykDL750
-version: _1.21 (mainly CG)
+version: _1.23 (mainly CG)  
 Procedure for controlling sources and measurement equipments.  
-
+Includes procedures to sweep flux when there are multiple loops and flux sources.  
